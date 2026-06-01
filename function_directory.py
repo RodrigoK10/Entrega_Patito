@@ -11,6 +11,10 @@ class FunctionInfo:
         self.return_type = return_type
         self.parameters = []
         self.variable_table = VariableTable(scope_name=name)
+        self.inicio = None
+        self.tam_local_entero = 0
+        self.tam_local_flotante = 0
+        self.tam_local_bool = 0
 
     def add_parameter(self, param_name, param_type):
         """
@@ -40,7 +44,11 @@ class FunctionInfo:
             "name": self.name,
             "return_type": self.return_type,
             "parameters": self.parameters,
-            "variables": self.variable_table.to_dict()
+            "variables": self.variable_table.to_dict(),
+            "inicio": self.inicio,
+            "tam_local_entero": self.tam_local_entero,
+            "tam_local_flotante": self.tam_local_flotante,
+            "tam_local_bool": self.tam_local_bool
         }
 
 
@@ -88,6 +96,12 @@ class FunctionDirectory:
             )
 
         return self.functions[name]
+
+    def set_inicio(self, name, numero_cuadruplo):
+        """
+        Registra el número del primer cuádruplo de la función.
+        """
+        self.get_function(name).inicio = numero_cuadruplo
 
     def add_global_variable(self, var_name, var_type):
         """
@@ -144,5 +158,6 @@ class FunctionDirectory:
         for function in self.functions.values():
             print(f"\nFunción: {function.name}")
             print(f"Tipo de retorno: {function.return_type}")
+            print(f"Inicio: {function.inicio}")
             print(f"Parámetros: {function.parameters}")
             function.variable_table.print_table()
