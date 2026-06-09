@@ -208,6 +208,175 @@ fin
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
+# TC-10: Factorial en principal (iterativo, n=6)
+# ─────────────────────────────────────────────────────────────────────────────
+TC10 = """
+programa tc10;
+vars {
+    entero n, resultado, i;
+}
+principal ()
+{
+    n = 6;
+    resultado = 1;
+    i = 1;
+    mientras (i < n + 1) haz
+    {
+        resultado = resultado * i;
+        i = i + 1;
+    }
+    fin_mientras
+    imprime("Factorial de 6 (en principal):");
+    imprime(resultado);
+}
+fin
+"""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TC-11: Factorial en función (cíclica), llamada múltiple
+# ─────────────────────────────────────────────────────────────────────────────
+TC11 = """
+programa tc11;
+
+funcion factorial (n : entero)
+vars {
+    entero resultado, i;
+}
+{
+    resultado = 1;
+    i = 1;
+    mientras (i < n + 1) haz
+    {
+        resultado = resultado * i;
+        i = i + 1;
+    }
+    fin_mientras
+    imprime(resultado);
+}
+
+principal ()
+{
+    imprime("Factorial de 5:");
+    factorial(5);
+    imprime("Factorial de 6:");
+    factorial(6);
+    imprime("Factorial de 7:");
+    factorial(7);
+}
+fin
+"""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TC-12: Serie de Fibonacci en principal (iterativo, 8 términos)
+# ─────────────────────────────────────────────────────────────────────────────
+TC12 = """
+programa tc12;
+vars {
+    entero n, a, b, temp, i;
+}
+principal ()
+{
+    n = 8;
+    a = 0;
+    b = 1;
+    imprime("Fibonacci (8 terminos, en principal):");
+    imprime(a);
+    imprime(b);
+    i = 2;
+    mientras (i < n) haz
+    {
+        temp = a + b;
+        a = b;
+        b = temp;
+        imprime(b);
+        i = i + 1;
+    }
+    fin_mientras
+}
+fin
+"""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TC-13: Serie de Fibonacci en función (cíclica), llamada con distintos n
+# ─────────────────────────────────────────────────────────────────────────────
+TC13 = """
+programa tc13;
+
+funcion fibonacci (n : entero)
+vars {
+    entero a, b, temp, i;
+}
+{
+    a = 0;
+    b = 1;
+    imprime(a);
+    si (n > 1) entonces
+    {
+        imprime(b);
+        i = 2;
+        mientras (i < n) haz
+        {
+            temp = a + b;
+            a = b;
+            b = temp;
+            imprime(b);
+            i = i + 1;
+        }
+        fin_mientras
+    }
+    fin_si
+}
+
+principal ()
+{
+    imprime("Fibonacci (5 terminos):");
+    fibonacci(5);
+    imprime("Fibonacci (8 terminos):");
+    fibonacci(8);
+}
+fin
+"""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TC-14: Factorial RECURSIVO — función tipada con regresa
+# ─────────────────────────────────────────────────────────────────────────────
+TC14 = """
+programa tc14;
+vars {
+    entero res;
+}
+
+funcion factorial : entero (n : entero)
+vars {
+    entero parcial;
+}
+{
+    si (n == 0) entonces
+    {
+        regresa 1;
+    }
+    fin_si
+    parcial = factorial(n - 1);
+    regresa n * parcial;
+}
+
+principal ()
+{
+    imprime("Factorial recursivo de 0:");
+    res = factorial(0);
+    imprime(res);
+    imprime("Factorial recursivo de 5:");
+    res = factorial(5);
+    imprime(res);
+    imprime("Factorial recursivo de 7:");
+    res = factorial(7);
+    imprime(res);
+}
+fin
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # TC-8: Error semántico esperado (tipo incompatible)
 # ─────────────────────────────────────────────────────────────────────────────
 TC8_error = """
@@ -240,13 +409,19 @@ fin
 # ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    correr(TC1, "TC-1: Hola mundo")
-    correr(TC2, "TC-2: Variables globales y aritmética")
-    correr(TC3, "TC-3: Condicional si/sino")
-    correr(TC4, "TC-4: Ciclo mientras (suma 1..5)")
-    correr(TC5, "TC-5: Declaración e invocación de función")
-    correr(TC6, "TC-6: Función con variable local y ciclo")
-    correr(TC7, "TC-7: Dos funciones, maximo/minimo")
+    correr(TC1,  "TC-1:  Hola mundo")
+    correr(TC2,  "TC-2:  Variables globales y aritmética")
+    correr(TC3,  "TC-3:  Condicional si/sino")
+    correr(TC4,  "TC-4:  Ciclo mientras (suma 1..5)")
+    correr(TC5,  "TC-5:  Declaración e invocación de función")
+    correr(TC6,  "TC-6:  Función con variable local y ciclo")
+    correr(TC7,  "TC-7:  Dos funciones, maximo/minimo")
+    correr(TC10, "TC-10: Factorial en principal (n=6)")
+    correr(TC11, "TC-11: Factorial en función — 5!, 6!, 7!")
+    correr(TC12, "TC-12: Fibonacci en principal (8 términos)")
+    correr(TC13, "TC-13: Fibonacci en función — 5 y 8 términos")
+    correr(TC14, "TC-14: Factorial RECURSIVO con regresa")
+   
 
     print(f"\n{'='*60}")
     print("  TC-8: Error esperado — asignar flotante a entero")

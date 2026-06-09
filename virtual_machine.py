@@ -48,8 +48,8 @@ class MemoriaEjecucion:
         """
         tabla_constantes: {addr: valor} generado por MemoryManager en compilación.
         """
-        self._global    = {}
-        self._local     = [{}]   # frame global inicial (para main)
+        self._global    = {999: 0}  # 999 = registro de retorno para funciones tipadas
+        self._local     = [{}]      # frame global inicial (para main)
         self._temporal  = [{}]
         self._constante = dict(tabla_constantes)
 
@@ -191,6 +191,9 @@ class VirtualMachine:
             elif op == 'ENDFUNC':
                 self._op_endfunc()
                 continue
+            elif op == 'RETURN':
+                self._op_return(q)
+                continue
             else:
                 raise RuntimeError(f"Opcode desconocido: '{op}'")
 
@@ -257,7 +260,8 @@ class VirtualMachine:
         self._staging[q.resultado] = valor
 
     def _op_gosub(self, q):
-        # Guardar ip de retorno y nombre de función activa
+        # Recursión: se guarda a dónde regresar y se abre un espacio de memoria nuevo.
+        # Así cada llamada (incluso a sí misma) tiene sus propias variables sin pisarse.
         self._call_stack.append((self._ip + 1, q.izquierdo))
         # Crear frame y cargar parámetros
         self._mem.push_frame()
@@ -272,3 +276,44 @@ class VirtualMachine:
         ret_ip, _ = self._call_stack.pop()
         self._mem.pop_frame()
         self._ip = ret_ip
+
+    def _op_return(self, q):
+        # Guarda el valor de retorno en el registro 999 (global)
+        valor = self._mem.leer(q.izquierdo)
+        self._mem.escribir(999, valor)
+        # Comportamiento igual a ENDFUNC
+        if not self._call_stack:
+            raise RuntimeError("RETURN sin llamada activa")
+        ret_ip, _ = self._call_stack.pop()
+        self._mem.pop_frame()
+        self._ip = ret_ip
+
+
+if __name__ == "__main__":
+    from parser import compilar
+
+    demos = [
+        ("Hola mundo",
+         'programa demo; principal() { imprime("Hola desde la VM"); imprime(3 + 4); } fin'),
+        ("Factorial recursivo de 5",
+         """
+         programa demo2;
+         vars { entero res; }
+         funcion factorial : entero (n : entero)
+         vars { entero p; }
+         {
+             si (n == 0) entonces { regresa 1; } fin_si
+             p = factorial(n - 1);
+             regresa n * p;
+         }
+         principal () { res = factorial(5); imprime(res); } fin
+         """),
+    ]
+
+    for titulo, codigo in demos:
+        print(f"\n{'='*50}\n  {titulo}\n{'='*50}")
+        fd, quads, mem = compilar(codigo)
+        quads.desplegar()
+        print("\n--- Ejecución ---")
+        vm = VirtualMachine(fd, quads, mem)
+        vm.ejecutar()

@@ -150,24 +150,30 @@ def p_funcion_list_empty(p):
 
 def p_funcion(p):
     'funcion : FUNCION funcion_decl LPAREN param_list RPAREN vars_local cuerpo_func'
-    # Rellenar el GOTO que salta el cuerpo de esta función
     idx = _saltos.pop()
     cuadruplos.rellena_salto(idx, cuadruplos.siguiente())
 
 
-def p_funcion_decl(p):
-    'funcion_decl : ID'
+def _registrar_funcion(nombre, return_type):
+    """Lógica compartida entre funcion_decl nula y tipada."""
     global _scope_actual
-    nombre = p[1]
     if func_dir.function_exists(nombre):
         raise Exception(f"Función ya declarada: '{nombre}'")
-    # GOTO para saltar el cuerpo; se rellena al terminar la función
     idx = cuadruplos.agregar('GOTO', None, None, None)
     _saltos.append(idx)
-    func_dir.add_function(nombre, 'nula')
+    func_dir.add_function(nombre, return_type)
     _scope_actual = nombre
-    # inicio = primer cuádruplo real del cuerpo (después del GOTO)
     func_dir.set_inicio(nombre, cuadruplos.siguiente())
+
+
+def p_funcion_decl_nula(p):
+    'funcion_decl : ID'
+    _registrar_funcion(p[1], 'nula')
+
+
+def p_funcion_decl_tipada(p):
+    'funcion_decl : ID COLON tipo'
+    _registrar_funcion(p[1], _tipo_actual)
 
 
 def p_param_list_multi(p):
@@ -238,7 +244,8 @@ def p_estatuto(p):
                 | condicion
                 | ciclo
                 | imprime
-                | llamada_funcion'''
+                | llamada_funcion
+                | regresa_stmt'''
 
 
 # ─── asignación ──────────────────────────────────────────────────────────────
@@ -251,6 +258,58 @@ def p_asignacion(p):
     if res_t is None:
         raise Exception(f"Asignación inválida: no se puede asignar {val_tipo} a {tipo}")
     cuadruplos.agregar('=', val_addr, None, addr)
+
+
+def p_asig_era(p):
+    'asig_era : ID'
+    nombre = p[1]
+    if not func_dir.function_exists(nombre):
+        raise Exception(f"Función no declarada: '{nombre}'")
+    fi = func_dir.get_function(nombre)
+    if fi.return_type == 'nula':
+        raise Exception(f"La función '{nombre}' es nula y no puede usarse en asignación")
+    cuadruplos.agregar('ERA', nombre, None, None)
+    _func_call_stack.append((nombre, 0))
+
+
+def p_asig_llamada(p):
+    'asig_llamada : asig_era LPAREN arg_list RPAREN'
+    nombre, n_args = _func_call_stack.pop()
+    fi = func_dir.get_function(nombre)
+    if n_args != len(fi.parameters):
+        raise Exception(
+            f"'{nombre}' espera {len(fi.parameters)} argumento(s), recibió {n_args}")
+    cuadruplos.agregar('GOSUB', nombre, None, fi.inicio)
+    _operandos.append((999, fi.return_type))
+
+
+def p_asignacion_funcion(p):
+    'asignacion : ID IGUAL asig_llamada SEMICOLON'
+    var_addr, var_tipo = _buscar_var(p[1])
+    ret_addr, ret_tipo = _operandos.pop()
+    res_t = sem_cube.get_result_type(var_tipo, '=', ret_tipo)
+    if res_t is None:
+        raise Exception(
+            f"Asignación inválida: no se puede asignar {ret_tipo} a {var_tipo}")
+    cuadruplos.agregar('=', ret_addr, None, var_addr)
+
+
+# ─── regresa ─────────────────────────────────────────────────────────────────
+
+def p_regresa_stmt(p):
+    'regresa_stmt : REGRESA expresion SEMICOLON'
+    if _scope_actual == 'global':
+        raise Exception("'regresa' solo es válido dentro de una función")
+    ret_addr, ret_tipo = _operandos.pop()
+    fi = func_dir.functions[_scope_actual]
+    if fi.return_type == 'nula':
+        raise Exception(f"La función '{_scope_actual}' es nula; usa 'regresa' sin valor")
+    res_t = sem_cube.get_result_type(fi.return_type, '=', ret_tipo)
+    if res_t is None:
+        raise Exception(
+            f"Tipo de retorno incompatible en '{_scope_actual}': "
+            f"función retorna {fi.return_type}, expresión es {ret_tipo}")
+    cuadruplos.agregar('RETURN', ret_addr, None, None)
 
 
 # ─── condición (si / sino / fin_si) ──────────────────────────────────────────

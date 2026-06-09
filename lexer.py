@@ -45,6 +45,7 @@ tokens = list(reserved.values()) + [
     'COLON',
 ]
 
+
 t_MAYOR_IGUAL  = r'>='
 t_MENOR_IGUAL  = r'<='
 t_IGUAL_IGUAL  = r'=='
